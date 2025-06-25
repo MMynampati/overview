@@ -37,11 +37,26 @@ def check_dependencies():
         import openai
         import requests
         import chromadb
+        import langchain
+        import langchain_openai
+        import langchain_community
+        import sentence_transformers
         print("✅ All required dependencies are available")
         return True
     except ImportError as e:
         print(f"❌ Missing dependency: {e}")
         print("💡 Run: pip install -r requirements.txt")
+        return False
+
+def check_core_modules():
+    """Check if core modules can be imported."""
+    try:
+        from core.crawler import get_urls_from_sitemap
+        from core.loader import WebContentLoader
+        print("✅ Core modules are available")
+        return True
+    except ImportError as e:
+        print(f"❌ Missing core module: {e}")
         return False
 
 def create_data_directory():
@@ -61,15 +76,20 @@ def main():
     if not check_dependencies():
         sys.exit(1)
     
+    # Check core modules
+    if not check_core_modules():
+        sys.exit(1)
+    
     # Create data directory
     create_data_directory()
     
     print("\n" + "=" * 50)
     print("🎉 Setup complete!")
     print("\nNext steps:")
-    print("1. Edit .env file with your OpenAI API key and manual page URLs")
-    print("2. Run: streamlit run app.py")
-    print("3. Or run with Docker: docker-compose up --build")
+    print("1. Edit .env file with your OpenAI API key and sitemap URL")
+    print("2. Run ingestion: python ingest.py")
+    print("3. Run application: streamlit run app.py")
+    print("4. Or run with Docker: docker-compose up --build")
     print("\nFor more information, see README.md")
 
 if __name__ == "__main__":

@@ -11,6 +11,7 @@ A Streamlit-based search interface for manual pages with AI-powered Q&A capabili
 - 🔒 **Secure API Keys**: Environment variable-based configuration for security
 - 🐳 **Docker Support**: Easy deployment with Docker and Docker Compose
 - 📱 **Modern UI**: Clean, responsive interface built with Streamlit
+- 🕷️ **Automatic Discovery**: Uses sitemaps to automatically discover and index pages
 
 ## Quick Start
 
@@ -18,7 +19,7 @@ A Streamlit-based search interface for manual pages with AI-powered Q&A capabili
 
 - Python 3.8+ or Conda
 - OpenAI API key
-- Manual page URLs to index
+- Sitemap URL for your documentation
 
 ### Option 1: Conda Environment (Recommended for Development)
 
@@ -42,11 +43,16 @@ A Streamlit-based search interface for manual pages with AI-powered Q&A capabili
    Edit `.env` and add your configuration:
    ```env
    OPENAI_API_KEY=your_openai_api_key_here
-   MANUAL_PAGES=https://example.com/manual1,https://example.com/manual2,https://example.com/manual3
+   SITEMAP_URL=https://docs.overview.ai/sitemap.xml
    MAX_HISTORY_LENGTH=10
    ```
 
-4. **Run the application**
+4. **Run ingestion to index your documentation**
+   ```bash
+   python ingest.py
+   ```
+
+5. **Run the application**
    ```bash
    streamlit run app.py
    ```
@@ -67,7 +73,7 @@ A Streamlit-based search interface for manual pages with AI-powered Q&A capabili
    Edit `.env` and add your configuration:
    ```env
    OPENAI_API_KEY=your_openai_api_key_here
-   MANUAL_PAGES=https://example.com/manual1,https://example.com/manual2,https://example.com/manual3
+   SITEMAP_URL=https://docs.overview.ai/sitemap.xml
    MAX_HISTORY_LENGTH=10
    ```
 
@@ -105,7 +111,12 @@ A Streamlit-based search interface for manual pages with AI-powered Q&A capabili
    
    Edit `.env` with your configuration.
 
-5. **Run the application**
+5. **Run ingestion to index your documentation**
+   ```bash
+   python ingest.py
+   ```
+
+6. **Run the application**
    ```bash
    streamlit run app.py
    ```
@@ -157,20 +168,21 @@ deactivate
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `OPENAI_API_KEY` | Your OpenAI API key | Yes |
-| `MANUAL_PAGES` | Comma-separated list of manual page URLs | Yes |
+| `SITEMAP_URL` | URL to your documentation sitemap.xml | Yes |
 | `MAX_HISTORY_LENGTH` | Maximum conversation turns to keep in memory | No (default: 10) |
+| `DB_PATH` | Path for vector database storage | No (default: vectorstore) |
 
-### Manual Page URLs
+### Sitemap Configuration
 
-Add your manual page URLs to the `MANUAL_PAGES` environment variable, separated by commas:
+The application automatically discovers and indexes pages from your sitemap.xml file. Simply provide the URL to your sitemap:
 
 ```env
-MANUAL_PAGES=https://docs.example.com/page1,https://docs.example.com/page2,https://help.example.com/guide
+SITEMAP_URL=https://docs.overview.ai/sitemap.xml
 ```
 
 ## Usage
 
-1. **First Run**: The application will automatically index your manual pages on first startup
+1. **First Run**: Run `python ingest.py` to index your documentation from the sitemap
 2. **Search**: Type your question in the chat input
 3. **Get Answers**: Receive AI-generated answers with citation links
 4. **View Sources**: Click on citation numbers or expand the "View Source Citations" section
@@ -187,6 +199,7 @@ MANUAL_PAGES=https://docs.example.com/page1,https://docs.example.com/page2,https
 - GPT-3.5-turbo integration
 - Context-aware responses based on manual content
 - Automatic citation generation
+- Anti-hallucination prompting
 
 ### Session History
 - Maintains conversation context
@@ -198,12 +211,20 @@ MANUAL_PAGES=https://docs.example.com/page1,https://docs.example.com/page2,https
 - Clickable citation numbers
 - Detailed source information in expandable sections
 
+### Automatic Discovery
+- Sitemap-based page discovery
+- Intelligent content extraction
+- Politeness delays for web scraping
+
 ## File Structure
 
 ```
 overview/
 ├── app.py              # Main Streamlit application
-├── scraper.py          # Web scraping and vector indexing
+├── ingest.py           # Data ingestion pipeline
+├── core/
+│   ├── crawler.py      # Sitemap crawling utilities
+│   └── loader.py       # Web content loading
 ├── requirements.txt    # Python dependencies (for pip)
 ├── environment.yml     # Conda environment (for conda)
 ├── Dockerfile         # Docker configuration
@@ -228,25 +249,29 @@ overview/
    - Ensure your `.env` file exists and contains the correct API key
    - Check that the environment variable is properly set
 
-2. **"No manual pages configured"**
-   - Add your manual page URLs to the `MANUAL_PAGES` environment variable
-   - Ensure URLs are comma-separated and accessible
+2. **"Sitemap URL not configured"**
+   - Add your sitemap URL to the `SITEMAP_URL` environment variable
+   - Ensure the sitemap is accessible from your network
 
-3. **"Error scraping pages"**
-   - Check that the URLs are accessible from your network
-   - Some pages may require authentication or have anti-bot measures
+3. **"Error accessing sitemap"**
+   - Check that the sitemap URL is accessible from your network
+   - Verify the sitemap follows the standard XML format
 
-4. **Docker build fails**
+4. **"No content extracted from pages"**
+   - The application targets specific CSS classes for content extraction
+   - Check that your documentation uses the expected HTML structure
+
+5. **Docker build fails**
    - Ensure Docker and Docker Compose are installed
    - Check that all files are present in the repository
 
-5. **Conda environment issues**
+6. **Conda environment issues**
    - Try updating conda: `conda update conda`
    - Remove and recreate environment: `conda env remove -n manual-search && conda env create -f environment.yml`
 
 ### Performance Tips
 
-- Limit the number of manual pages for faster indexing
+- The ingestion process may take time depending on the number of pages
 - Use the re-index feature sparingly
 - Consider using a more powerful model for better responses
 

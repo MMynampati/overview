@@ -1,270 +1,106 @@
+# app.py (version 3 - with strict prompting and source links)
 import streamlit as st
-import os
+from langchain_community.vectorstores import Chroma
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_openai import ChatOpenAI
+from langchain.prompts import PromptTemplate
+from langchain.chains import ConversationalRetrievalChain
+from langchain.memory import ConversationBufferMemory
 from dotenv import load_dotenv
-from scraper import ManualPageScraper
-from openai import OpenAI
-import json
-from typing import List, Dict
-import time
 
-# Load environment variables
 load_dotenv()
 
-# Page configuration
-st.set_page_config(
-    page_title="Manual Pages Search",
-    page_icon="📚",
-    layout="wide",
-    initial_sidebar_state="expanded"
+# --- Configuration ---
+DB_PATH = "vectorstore"
+EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+LLM_MODEL = "gpt-3.5-turbo" # Or "gpt-4" for higher quality
+
+# --- NEW: The Strict Prompt Template ---
+# This is the core of our anti-hallucination and source-guiding strategy.
+prompt_template = """You are an expert assistant for the Overview AI documentation.
+Your task is to answer the user's question based ONLY on the provided context.
+Do not use any external knowledge or information you think you might know.
+
+Context:
+{context}
+
+Based on the context above, answer the following question:
+Question: {question}
+
+Here are your rules:
+1. If the context contains the answer, provide it clearly and concisely.
+2. If the context mentions something visual (like a diagram, screenshot, or chart), tell the user that the information is visual and they should consult the source link for the image.
+3. If the context does NOT contain the answer, you MUST respond with "I'm sorry, I couldn't find information about that in the documentation. Please try rephrasing your question."
+4. Do not make up an answer or try to guess.
+
+Answer:
+"""
+
+STRICT_PROMPT = PromptTemplate.from_template(prompt_template)
+
+# --- Initialize ---
+@st.cache_resource
+def load_components():
+    """Load the heavy components once and cache them."""
+    embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
+    vectorstore = Chroma(persist_directory=DB_PATH, embedding_function=embeddings)
+    llm = ChatOpenAI(temperature=0, model_name=LLM_MODEL) # Temperature 0 = less creative, more factual
+    return vectorstore, llm
+
+vectorstore, llm = load_components()
+
+# --- Session Memory ---
+if "memory" not in st.session_state:
+    st.session_state.memory = ConversationBufferMemory(
+        memory_key="chat_history",
+        return_messages=True,
+        output_key='answer'
+    )
+
+# --- The Conversational Chain (NOW WITH THE STRICT PROMPT) ---
+qa_chain = ConversationalRetrievalChain.from_llm(
+    llm=llm,
+    retriever=vectorstore.as_retriever(search_kwargs={"k": 4}), # Retrieve a bit more context
+    memory=st.session_state.memory,
+    return_source_documents=True,
+    output_key='answer',
+    # This is where we inject our new, strict prompt
+    combine_docs_chain_kwargs={"prompt": STRICT_PROMPT}
 )
 
-# Custom CSS for better styling
-st.markdown("""
-<style>
-    .main-header {
-        font-size: 2.5rem;
-        font-weight: bold;
-        color: #1f77b4;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    .chat-message {
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin-bottom: 1rem;
-        border-left: 4px solid #1f77b4;
-    }
-    .user-message {
-        background-color: #f0f2f6;
-        border-left-color: #1f77b4;
-    }
-    .assistant-message {
-        background-color: #e8f4fd;
-        border-left-color: #28a745;
-    }
-    .citation-link {
-        color: #1f77b4;
-        text-decoration: none;
-        font-weight: bold;
-    }
-    .citation-link:hover {
-        text-decoration: underline;
-    }
-    .sidebar-header {
-        font-size: 1.2rem;
-        font-weight: bold;
-        margin-bottom: 1rem;
-    }
-</style>
-""", unsafe_allow_html=True)
+# --- Streamlit UI (No changes here, but shown for completeness) ---
+st.title("User Manual Chatbot")
+st.write("Ask me anything about the Overview AI documentation!")
 
-# Initialize session state
-if 'messages' not in st.session_state:
+if "messages" not in st.session_state:
     st.session_state.messages = []
-if 'scraper' not in st.session_state:
-    st.session_state.scraper = None
-if 'client' not in st.session_state:
-    st.session_state.client = None
-if 'indexed_urls' not in st.session_state:
-    st.session_state.indexed_urls = []
 
-def initialize_components():
-    """Initialize scraper and OpenAI client."""
-    if st.session_state.scraper is None:
-        st.session_state.scraper = ManualPageScraper()
-    
-    if st.session_state.client is None:
-        api_key = os.getenv('OPENAI_API_KEY')
-        if api_key:
-            st.session_state.client = OpenAI(api_key=api_key)
-        else:
-            st.error("OpenAI API key not found. Please set the OPENAI_API_KEY environment variable.")
-            return False
-    
-    return True
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-def index_manual_pages():
-    """Index manual pages from environment variable."""
-    urls_str = os.getenv('MANUAL_PAGES')
-    if not urls_str:
-        st.error("No manual pages configured. Please set the MANUAL_PAGES environment variable.")
-        return False
-    
-    urls = [url.strip() for url in urls_str.split(',') if url.strip()]
-    if not urls:
-        st.error("No valid URLs found in MANUAL_PAGES environment variable.")
-        return False
-    
-    # Check if pages are already indexed
-    existing_urls = st.session_state.scraper.get_all_urls()
-    if not existing_urls:
-        with st.spinner("Indexing manual pages..."):
-            st.session_state.scraper.index_pages(urls)
-        st.success(f"Successfully indexed {len(urls)} manual pages!")
-    else:
-        st.session_state.indexed_urls = existing_urls
-    
-    return True
+if prompt := st.chat_input("How do I authenticate API requests?"):
+    st.chat_message("user").markdown(prompt)
+    st.session_state.messages.append({"role": "user", "content": prompt})
 
-def generate_response(query: str, context: List[Dict]) -> str:
-    """Generate response using OpenAI with context."""
-    if not st.session_state.client:
-        return "Error: OpenAI client not initialized."
-    
-    # Prepare context for the prompt
-    context_text = "\n\n".join([
-        f"Source: {item['url']}\nTitle: {item['title']}\nContent: {item['text']}"
-        for item in context
-    ])
-    
-    # Create citations list
-    citations = []
-    for i, item in enumerate(context, 1):
-        citations.append(f"[{i}] {item['title']} - {item['url']}")
-    
-    citations_text = "\n".join(citations)
-    
-    # Create the prompt
-    prompt = f"""You are a helpful assistant that answers questions based on the provided manual pages. 
-    
-Context from manual pages:
-{context_text}
+    with st.spinner("Searching the docs..."):
+        result = qa_chain.invoke({"question": prompt}) # Use .invoke for latest LangChain
+        response = result['answer']
+        source_docs = result['source_documents']
 
-Citations:
-{citations_text}
+    with st.chat_message("assistant"):
+        st.markdown(response)
+        # Display source documents with clickable links
+        with st.expander("Show Sources"):
+            if source_docs:
+                for doc in source_docs:
+                    source_url = doc.metadata.get('source', 'N/A')
+                    # Make the link clickable
+                    st.write(f"**Source:** [{source_url}]({source_url})")
+                    # Show a snippet of the content that was used
+                    st.caption(f"Content snippet: {doc.page_content[:200]}...")
+            else:
+                st.write("No source documents found for this query.")
 
-Question: {query}
 
-Please provide a comprehensive answer based on the context above. Include relevant citations in your response using the format [1], [2], etc. to reference the sources.
-
-Answer:"""
-    
-    try:
-        response = st.session_state.client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant that provides accurate information based on the given context and always includes proper citations."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=1000,
-            temperature=0.7
-        )
-        
-        return response.choices[0].message.content
-    except Exception as e:
-        return f"Error generating response: {str(e)}"
-
-def format_response_with_citations(response: str, context: List[Dict]) -> str:
-    """Format response to include clickable citation links."""
-    formatted_response = response
-    
-    # Replace citation numbers with clickable links
-    for i, item in enumerate(context, 1):
-        citation_pattern = f"[{i}]"
-        if citation_pattern in formatted_response:
-            link_html = f'<a href="{item["url"]}" target="_blank" class="citation-link">[{i}]</a>'
-            formatted_response = formatted_response.replace(citation_pattern, link_html)
-    
-    return formatted_response
-
-def main():
-    # Header
-    st.markdown('<h1 class="main-header">📚 Manual Pages Search</h1>', unsafe_allow_html=True)
-    
-    # Initialize components
-    if not initialize_components():
-        return
-    
-    # Index pages if needed
-    if not index_manual_pages():
-        return
-    
-    # Sidebar
-    with st.sidebar:
-        st.markdown('<div class="sidebar-header">Settings</div>', unsafe_allow_html=True)
-        
-        # Search settings
-        max_results = st.slider("Max search results", 3, 10, 5)
-        
-        # Session management
-        st.markdown('<div class="sidebar-header">Session</div>', unsafe_allow_html=True)
-        
-        if st.button("Clear Chat History"):
-            st.session_state.messages = []
-            st.rerun()
-        
-        # Display indexed pages
-        st.markdown('<div class="sidebar-header">Indexed Pages</div>', unsafe_allow_html=True)
-        indexed_urls = st.session_state.scraper.get_all_urls()
-        for url in indexed_urls:
-            st.write(f"• {url}")
-        
-        # Manual re-indexing
-        st.markdown('<div class="sidebar-header">Re-index Pages</div>', unsafe_allow_html=True)
-        if st.button("Re-index All Pages"):
-            urls_str = os.getenv('MANUAL_PAGES')
-            if urls_str:
-                urls = [url.strip() for url in urls_str.split(',') if url.strip()]
-                with st.spinner("Re-indexing pages..."):
-                    # Clear existing collection
-                    st.session_state.scraper.collection.delete()
-                    st.session_state.scraper = ManualPageScraper()
-                    st.session_state.scraper.index_pages(urls)
-                st.success("Pages re-indexed successfully!")
-                st.rerun()
-    
-    # Main chat interface
-    st.markdown("### Ask questions about your manual pages:")
-    
-    # Chat input
-    if prompt := st.chat_input("What would you like to know?"):
-        # Add user message to chat history
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        
-        # Search for relevant content
-        with st.spinner("Searching for relevant information..."):
-            search_results = st.session_state.scraper.search(prompt, n_results=max_results)
-        
-        if not search_results:
-            st.error("No relevant information found. Please try a different query.")
-            return
-        
-        # Generate response
-        with st.spinner("Generating response..."):
-            response = generate_response(prompt, search_results)
-        
-        # Add assistant response to chat history
-        st.session_state.messages.append({"role": "assistant", "content": response, "citations": search_results})
-    
-    # Display chat history
-    for message in st.session_state.messages:
-        if message["role"] == "user":
-            st.markdown(f"""
-            <div class="chat-message user-message">
-                <strong>You:</strong> {message["content"]}
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            # Format response with citations
-            formatted_response = format_response_with_citations(message["content"], message.get("citations", []))
-            
-            st.markdown(f"""
-            <div class="chat-message assistant-message">
-                <strong>Assistant:</strong><br>
-                {formatted_response}
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # Show citation details in expander
-            if "citations" in message:
-                with st.expander("View Source Citations"):
-                    for i, citation in enumerate(message["citations"], 1):
-                        st.markdown(f"""
-                        **[{i}] {citation['title']}**
-                        - URL: [{citation['url']}]({citation['url']})
-                        - Type: {citation['type']}
-                        - Content: {citation['text'][:200]}...
-                        """)
-
-if __name__ == "__main__":
-    main() 
+    st.session_state.messages.append({"role": "assistant", "content": response})

@@ -4,7 +4,7 @@ channels:
   - defaults
 dependencies:
   - python=3.11
-  - numpy
+  - numpy<2.0
   - scipy
   - scikit-learn
   - pyarrow
@@ -14,9 +14,13 @@ dependencies:
     - openai>=1.6.1
     - requests==2.31.0
     - beautifulsoup4==4.12.2
-    - langchain==0.0.350
-    - langchain-openai==0.0.2
+    - lxml==4.9.4
+    - numpy<2.0
+    - huggingface-hub<0.20.0
+    - langchain>=0.1.0
+    - langchain-openai>=0.0.2
+    - langchain-community>=0.0.31
     - python-dotenv==1.0.0
     - chromadb==0.4.18
     - sentence-transformers==2.2.2
-    - pydantic==2.5.0 
+    - pydantic==2.5.0

@@ -26,16 +26,6 @@ def test_env_variables():
     else:
         print("OPENAI_API_KEY is configured")
     
-    manual_pages = os.getenv('MANUAL_PAGES')
-    if not manual_pages:
-        print("MANUAL_PAGES not found")
-        return False
-    elif 'example.com' in manual_pages:
-        print("MANUAL_PAGES still contains example URLs")
-        return False
-    else:
-        print("MANUAL_PAGES is configured")
-    
     return True
 
 def test_imports():
@@ -64,26 +54,55 @@ def test_imports():
         return False
     
     try:
-        from scraper import ManualPageScraper
-        print("ManualPageScraper imported successfully")
+        import langchain
+        import langchain_openai
+        import langchain_community
+        print("langchain modules imported successfully")
     except ImportError as e:
-        print(f"Failed to import ManualPageScraper: {e}")
+        print(f"Failed to import langchain modules: {e}")
+        return False
+    
+    try:
+        import sentence_transformers
+        print("sentence_transformers imported successfully")
+    except ImportError as e:
+        print(f"Failed to import sentence_transformers: {e}")
         return False
     
     return True
 
-def test_scraper_initialization():
-    """Test if the scraper can be initialized."""
-    print("\nTesting scraper initialization...")
+def test_core_modules():
+    """Test if core modules can be imported and initialized."""
+    print("\nTesting core modules...")
     
     try:
-        from scraper import ManualPageScraper
-        scraper = ManualPageScraper()
-        print("ManualPageScraper initialized successfully")
-        return True
-    except Exception as e:
-        print(f"Failed to initialize ManualPageScraper: {e}")
+        from core.crawler import get_category_links, get_article_links_from_category, scrape_article_content
+        print("core.crawler functions imported successfully")
+    except ImportError as e:
+        print(f"Failed to import core.crawler: {e}")
         return False
+    
+    try:
+        from core.loader import WebContentLoader
+        print("core.loader imported successfully")
+    except ImportError as e:
+        print(f"Failed to import core.loader: {e}")
+        return False
+    
+    return True
+
+def test_ingestion_pipeline():
+    """Test if the ingestion pipeline can be imported."""
+    print("\nTesting ingestion pipeline...")
+    
+    try:
+        import ingest
+        print("ingest module imported successfully")
+    except ImportError as e:
+        print(f"Failed to import ingest module: {e}")
+        return False
+    
+    return True
 
 def test_openai_connection():
     """Test OpenAI API connection."""
@@ -105,6 +124,23 @@ def test_openai_connection():
         print(f"OpenAI API connection failed: {e}")
         return False
 
+def test_documentation_access():
+    """Test if documentation site is accessible."""
+    print("\nTesting documentation access...")
+    
+    try:
+        import requests
+        from core.crawler import HEADERS
+        
+        # Test the landing page
+        response = requests.get("https://docs.overview.ai/docs/start-here", headers=HEADERS, timeout=10)
+        response.raise_for_status()
+        print("Documentation site is accessible")
+        return True
+    except Exception as e:
+        print(f"Documentation access failed: {e}")
+        return False
+
 def main():
     print("Testing Manual Pages Search Interface Setup")
     print("=" * 60)
@@ -112,8 +148,10 @@ def main():
     tests = [
         ("Environment Variables", test_env_variables),
         ("Module Imports", test_imports),
-        ("Scraper Initialization", test_scraper_initialization),
-        ("OpenAI Connection", test_openai_connection)
+        ("Core Modules", test_core_modules),
+        ("Ingestion Pipeline", test_ingestion_pipeline),
+        ("OpenAI Connection", test_openai_connection),
+        ("Documentation Access", test_documentation_access)
     ]
     
     passed = 0
@@ -134,8 +172,9 @@ def main():
     if passed == total:
         print("All tests passed! Your setup is ready to use.")
         print("\nNext steps:")
-        print("1. Run: streamlit run app.py")
-        print("2. Or run with Docker: docker-compose up --build")
+        print("1. Run ingestion: python ingest.py")
+        print("2. Run application: streamlit run app.py")
+        print("3. Or run with Docker: docker-compose up --build")
     else:
         print("Some tests failed. Please check the errors above.")
         sys.exit(1)
