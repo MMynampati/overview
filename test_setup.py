@@ -76,17 +76,21 @@ def test_core_modules():
     print("\nTesting core modules...")
     
     try:
-        from core.crawler import get_category_links, get_article_links_from_category, scrape_article_content
+        from core.crawler import load_urls_from_csv, scrape_url_list, setup_driver
         print("core.crawler functions imported successfully")
     except ImportError as e:
         print(f"Failed to import core.crawler: {e}")
         return False
     
     try:
-        from core.loader import WebContentLoader
-        print("core.loader imported successfully")
-    except ImportError as e:
-        print(f"Failed to import core.loader: {e}")
+        # Check if the CSV file exists
+        if os.path.exists("core/overview.csv"):
+            print("CSV file found")
+        else:
+            print("CSV file not found")
+            return False
+    except Exception as e:
+        print(f"Failed to check CSV file: {e}")
         return False
     
     return True

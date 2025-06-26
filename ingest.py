@@ -8,55 +8,46 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.schema import Document
 from dotenv import load_dotenv
 
-# Import our new custom modules
-from core.crawler import get_category_links, get_article_links_from_category, scrape_article_content
-from core.loader import WebContentLoader
+# Import our crawler functions
+from core.crawler import load_urls_from_csv, scrape_url_list, setup_driver
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 # --- Configuration ---
-BASE_URL = "https://docs.overview.ai/docs/user-manual"
-PRODUCT_LANDING_PAGE_URL = "https://docs.overview.ai/docs/start-here"
+CSV_FILE = "core/overview.csv"
 DB_PATH = os.getenv('DB_PATH', 'vectorstore')
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 CHUNK_SIZE = 1200
 CHUNK_OVERLAP = 150
 
-def crawl_documentation():
+def load_scraped_data():
     """
-    Crawl the documentation site using the new Document360-specific crawler.
+    Load scraped data from the JSON file created by the crawler.
     Returns a list of LangChain Document objects.
     """
-    logger.info("--- Starting Documentation Crawl ---")
+    logger.info("--- Loading Scraped Data ---")
     
-    all_articles_data = []
-    categories = get_category_links(PRODUCT_LANDING_PAGE_URL)
-    
-    if not categories:
-        logger.error("No categories found. Check the selectors in crawler.py")
+    json_file = 'scraped_docs_overview_ai.json'
+    if not os.path.exists(json_file):
+        logger.error(f"Scraped data file {json_file} not found. Please run the crawler first.")
         return []
     
-    for category in categories:
-        articles_to_scrape = get_article_links_from_category(category['url'], category['name'])
-        
-        for article_info in articles_to_scrape:
-            scraped_data = scrape_article_content(article_info)
-            if scraped_data:
-                all_articles_data.append(scraped_data)
+    with open(json_file, 'r', encoding='utf-8') as f:
+        scraped_articles = json.load(f)
     
-    logger.info(f"Crawled {len(all_articles_data)} articles from {len(categories)} categories")
+    logger.info(f"Loaded {len(scraped_articles)} articles from {json_file}")
     
     # Convert to LangChain Documents
     documents = []
-    for article in all_articles_data:
+    for article in scraped_articles:
         doc = Document(
             page_content=article['content'],
             metadata={
-                'source': article['source'],
+                'source': article['url'],
                 'title': article['title'],
-                'category': article['category']
+                'category': article.get('category', 'Unknown')
             }
         )
         documents.append(doc)
@@ -66,17 +57,17 @@ def crawl_documentation():
 def main():
     """
     Main ingestion pipeline:
-    1. Crawl documentation using Document360-specific crawler
+    1. Load scraped data from JSON file
     2. Convert to LangChain Documents
     3. Split documents into chunks
     4. Embed chunks and store them in ChromaDB
     """
     logger.info("--- Starting Ingestion Pipeline ---")
 
-    # 1. Crawl documentation
-    documents = crawl_documentation()
+    # 1. Load scraped data
+    documents = load_scraped_data()
     if not documents:
-        logger.error("No documents were crawled. Halting ingestion.")
+        logger.error("No documents were loaded. Please run the crawler first.")
         return
 
     # 2. Split documents into chunks

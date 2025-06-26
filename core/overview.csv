@@ -1,0 +1,48 @@
+Product,Category,Page URL
+OV20i,Start Here,https://docs.overview.ai/docs/recommended-setup-flow
+,Start Here,https://docs.overview.ai/docs/quick-start-guide
+,Start Here,https://docs.overview.ai/docs/product-activation
+,Start Here,https://docs.overview.ai/docs/basic-navigation
+,Start Here,https://docs.overview.ai/docs/creating-your-first-recipe
+,Start Here,https://docs.overview.ai/docs/creating-your-first-classification-recipe
+,Start Here,https://docs.overview.ai/docs/creating-your-first-segmentation-recipe
+,Hardware Setup,https://docs.overview.ai/docs/technical-specifications
+,Hardware Setup,https://docs.overview.ai/docs/recommended-accessories
+,Hardware Setup,https://docs.overview.ai/docs/mounting-and-mechanical
+,Hardware Setup,https://docs.overview.ai/docs/electrical-and-communication
+,Walkthroughs,https://docs.overview.ai/docs/creating-a-basic-single-roi-classifier-1
+,Walkthroughs,https://docs.overview.ai/docs/creating-a-segmenter
+,Walkthroughs,https://docs.overview.ai/docs/multiple-views-one-recipe
+,Walkthroughs,https://docs.overview.ai/docs/adding-data-to-an-existing-recipe-and-retraining
+,Walkthroughs,https://docs.overview.ai/docs/trigger-using-a-plc
+,Walkthroughs,https://docs.overview.ai/docs/rs232
+,Walkthroughs,https://docs.overview.ai/docs/tcp-communication
+,Walkthroughs,https://docs.overview.ai/docs/change-recipe-using-plc
+,Walkthroughs,https://docs.overview.ai/docs/communication-troubleshooting
+,Walkthroughs,https://docs.overview.ai/docs/create-a-classifier-node-red-logic-2
+,Walkthroughs,https://docs.overview.ai/docs/recipe-change-using-http
+,Walkthroughs,https://docs.overview.ai/docs/setting-up-mqtt-communication
+,Walkthroughs,https://docs.overview.ai/docs/trigger-using-mqtt-communication
+,Walkthroughs,https://docs.overview.ai/docs/send-customdata-from-plc-to-camera
+,Software Setup,https://docs.overview.ai/docs/recipe-management
+,Software Setup,https://docs.overview.ai/docs/recipe-editor
+,Software Setup,https://docs.overview.ai/docs/imaging-setup
+,Software Setup,https://docs.overview.ai/docs/alignment-block
+,Software Setup,https://docs.overview.ai/docs/roi-block
+,Software Setup,https://docs.overview.ai/docs/classification-block
+,Software Setup,https://docs.overview.ai/docs/segmentation-block
+,Software Setup,https://docs.overview.ai/docs/io-and-node-red-logic
+,Software Setup,https://docs.overview.ai/docs/ftp-server
+,Software Setup,https://docs.overview.ai/docs/hmi
+,Software Setup,https://docs.overview.ai/docs/library
+,Software Setup,https://docs.overview.ai/docs/users-and-permissions
+,Software Setup,https://docs.overview.ai/docs/settings
+,Software Setup,https://docs.overview.ai/docs/software-update
+,Software Setup,https://docs.overview.ai/docs/software-updates-release-notes
+,PLC Communication,https://docs.overview.ai/docs/plc-communication-ethernetip-connections
+,PLC Communication,https://docs.overview.ai/docs/plc-communication-ethernetip-recipe-switch
+,PLC Communication,https://docs.overview.ai/docs/trigger-using-a-plc-ethernet
+,PLC Communication,https://docs.overview.ai/docs/ethernetip-setting-up-rockwell-software
+,PLC Communication,https://docs.overview.ai/docs/plc-communication-profinet
+,Robots,
+,Robots,https://docs.overview.ai/docs/universal-robots
