@@ -19,7 +19,6 @@ A Streamlit-based search interface for manual pages with AI-powered Q&A capabili
 
 - Python 3.8+ or Conda
 - OpenAI API key
-- Sitemap URL for your documentation
 
 ### Option 1: Conda Environment (Recommended for Development)
 
@@ -43,7 +42,6 @@ A Streamlit-based search interface for manual pages with AI-powered Q&A capabili
    Edit `.env` and add your configuration:
    ```env
    OPENAI_API_KEY=your_openai_api_key_here
-   SITEMAP_URL=https://docs.overview.ai/sitemap.xml
    MAX_HISTORY_LENGTH=10
    ```
 
@@ -57,7 +55,7 @@ A Streamlit-based search interface for manual pages with AI-powered Q&A capabili
    streamlit run app.py
    ```
 
-### Option 2: Docker (Recommended for Deployment)
+### Option 2: Docker (Recommended for Deployment) [CURRENTLY UNAVAILABLE]
 
 1. **Clone the repository**
    ```bash
@@ -168,21 +166,12 @@ deactivate
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `OPENAI_API_KEY` | Your OpenAI API key | Yes |
-| `SITEMAP_URL` | URL to your documentation sitemap.xml | Yes |
 | `MAX_HISTORY_LENGTH` | Maximum conversation turns to keep in memory | No (default: 10) |
 | `DB_PATH` | Path for vector database storage | No (default: vectorstore) |
 
-### Sitemap Configuration
-
-The application automatically discovers and indexes pages from your sitemap.xml file. Simply provide the URL to your sitemap:
-
-```env
-SITEMAP_URL=https://docs.overview.ai/sitemap.xml
-```
-
 ## Usage
 
-1. **First Run**: Run `python ingest.py` to index your documentation from the sitemap
+1. **First Run**: Run `python ingest.py` to index your documentation from the list of urls 
 2. **Search**: Type your question in the chat input
 3. **Get Answers**: Receive AI-generated answers with citation links
 4. **View Sources**: Click on citation numbers or expand the "View Source Citations" section
@@ -223,8 +212,13 @@ overview/
 ├── app.py              # Main Streamlit application
 ├── ingest.py           # Data ingestion pipeline
 ├── core/
-│   ├── crawler.py      # Sitemap crawling utilities
-│   └── loader.py       # Web content loading
+│   ├── crawler.py      # crawling + scraping utilities
+│   └── overview.csv    # links + category tags of all pages
+├── src/
+│   ├── app.py          # Main Streamlit application
+│   └── requirements.txt    # Python dependencies (for pip) (only whats needed for streamlit deployment)
+│   └── vectorstore/    # Vector database storage (auto-created)
+   
 ├── requirements.txt    # Python dependencies (for pip)
 ├── environment.yml     # Conda environment (for conda)
 ├── Dockerfile         # Docker configuration
@@ -232,14 +226,12 @@ overview/
 ├── env.example        # Environment variables template
 ├── .gitignore         # Git ignore rules
 ├── README.md          # This file
-└── data/              # Vector database storage (auto-created)
 ```
 
 ## Security Considerations
 
 - **API Keys**: Never commit your `.env` file to version control
 - **Environment Variables**: Use Docker secrets or environment variables for production
-- **Data Storage**: Vector database is stored locally in the `data/` directory
 
 ## Troubleshooting
 
@@ -249,43 +241,18 @@ overview/
    - Ensure your `.env` file exists and contains the correct API key
    - Check that the environment variable is properly set
 
-2. **"Sitemap URL not configured"**
-   - Add your sitemap URL to the `SITEMAP_URL` environment variable
-   - Ensure the sitemap is accessible from your network
-
-3. **"Error accessing sitemap"**
-   - Check that the sitemap URL is accessible from your network
-   - Verify the sitemap follows the standard XML format
-
-4. **"No content extracted from pages"**
+2. **"No content extracted from pages"**
    - The application targets specific CSS classes for content extraction
    - Check that your documentation uses the expected HTML structure
 
-5. **Docker build fails**
+3. **Docker build fails**
    - Ensure Docker and Docker Compose are installed
    - Check that all files are present in the repository
 
-6. **Conda environment issues**
+4. **Conda environment issues**
    - Try updating conda: `conda update conda`
    - Remove and recreate environment: `conda env remove -n manual-search && conda env create -f environment.yml`
 
-### Performance Tips
-
-- The ingestion process may take time depending on the number of pages
-- Use the re-index feature sparingly
-- Consider using a more powerful model for better responses
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Support
 
