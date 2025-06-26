@@ -52,5 +52,4 @@ Thumbs.db
 # Streamlit
 .streamlit/
 
-# ChromaDB
-chroma_db/ 
+# Note: vectorstore/ is removed from .gitignore to include it in deployment 
