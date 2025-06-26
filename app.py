@@ -1,5 +1,6 @@
 # app.py (version 3 - with strict prompting and source links)
 import streamlit as st
+import os
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI
@@ -42,10 +43,23 @@ STRICT_PROMPT = PromptTemplate.from_template(prompt_template)
 @st.cache_resource
 def load_components():
     """Load the heavy components once and cache them."""
-    embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
-    vectorstore = Chroma(persist_directory=DB_PATH, embedding_function=embeddings)
-    llm = ChatOpenAI(temperature=0, model_name=LLM_MODEL) # Temperature 0 = less creative, more factual
-    return vectorstore, llm
+    try:
+        embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
+        
+        # Check if vectorstore directory exists
+        if os.path.exists(DB_PATH):
+            vectorstore = Chroma(persist_directory=DB_PATH, embedding_function=embeddings)
+            st.success("✅ Vector database loaded successfully!")
+        else:
+            st.error(f"❌ Vector database not found at {DB_PATH}")
+            st.info("Please ensure the vectorstore directory is uploaded to your Streamlit Cloud deployment.")
+            return None, None
+            
+        llm = ChatOpenAI(temperature=0, model_name=LLM_MODEL) # Temperature 0 = less creative, more factual
+        return vectorstore, llm
+    except Exception as e:
+        st.error(f"❌ Error loading components: {e}")
+        return None, None
 
 vectorstore, llm = load_components()
 
@@ -58,19 +72,26 @@ if "memory" not in st.session_state:
     )
 
 # --- The Conversational Chain (NOW WITH THE STRICT PROMPT) ---
-qa_chain = ConversationalRetrievalChain.from_llm(
-    llm=llm,
-    retriever=vectorstore.as_retriever(search_kwargs={"k": 4}), # Retrieve a bit more context
-    memory=st.session_state.memory,
-    return_source_documents=True,
-    output_key='answer',
-    # This is where we inject our new, strict prompt
-    combine_docs_chain_kwargs={"prompt": STRICT_PROMPT}
-)
+if vectorstore and llm:
+    qa_chain = ConversationalRetrievalChain.from_llm(
+        llm=llm,
+        retriever=vectorstore.as_retriever(search_kwargs={"k": 4}), # Retrieve a bit more context
+        memory=st.session_state.memory,
+        return_source_documents=True,
+        output_key='answer',
+        # This is where we inject our new, strict prompt
+        combine_docs_chain_kwargs={"prompt": STRICT_PROMPT}
+    )
+else:
+    qa_chain = None
 
 # --- Streamlit UI (No changes here, but shown for completeness) ---
 st.title("User Manual Chatbot")
 st.write("Ask me anything about the Overview AI documentation!")
+
+if not qa_chain:
+    st.warning("⚠️ Chatbot is not ready. Please check the vector database setup.")
+    st.stop()
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -84,9 +105,13 @@ if prompt := st.chat_input("How do I authenticate API requests?"):
     st.session_state.messages.append({"role": "user", "content": prompt})
 
     with st.spinner("Searching the docs..."):
-        result = qa_chain.invoke({"question": prompt}) # Use .invoke for latest LangChain
-        response = result['answer']
-        source_docs = result['source_documents']
+        try:
+            result = qa_chain.invoke({"question": prompt}) # Use .invoke for latest LangChain
+            response = result['answer']
+            source_docs = result['source_documents']
+        except Exception as e:
+            response = f"Sorry, I encountered an error: {e}"
+            source_docs = []
 
     with st.chat_message("assistant"):
         st.markdown(response)
