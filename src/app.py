@@ -1,8 +1,8 @@
 # app.py (version 3 - with strict prompting and source links)
 import streamlit as st
 import os
-from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_chroma import Chroma
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
 from langchain.chains import ConversationalRetrievalChain
@@ -72,6 +72,7 @@ if "memory" not in st.session_state:
     )
 
 # --- The Conversational Chain (NOW WITH THE STRICT PROMPT) ---
+qa_chain = None
 if vectorstore and llm:
     qa_chain = ConversationalRetrievalChain.from_llm(
         llm=llm,
@@ -82,8 +83,6 @@ if vectorstore and llm:
         # This is where we inject our new, strict prompt
         combine_docs_chain_kwargs={"prompt": STRICT_PROMPT}
     )
-else:
-    qa_chain = None
 
 # --- Streamlit UI (No changes here, but shown for completeness) ---
 st.title("User Manual Chatbot")
