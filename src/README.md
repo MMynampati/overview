@@ -1,4 +1,37 @@
-# Overview AI Documentation Chatbot - Streamlit Cloud Deployment
+# Overview AI Chatbot - Deployment Ready
+
+This directory contains the minimal files needed to run the Overview AI documentation chatbot.
+
+## Quick Start
+
+1. **For Streamlit Cloud Deployment:**
+   - Upload this entire `src/` directory to Streamlit Cloud
+   - Set your `OPENAI_API_KEY` in the Streamlit Cloud secrets
+   - Deploy!
+
+2. **For Local Development:**
+   ```bash
+   cd src
+   pip install -r requirements.txt
+   streamlit run app.py
+   ```
+
+## What's Included
+
+- `app.py` - The Streamlit chatbot application
+- `requirements.txt` - Minimal dependencies for deployment
+- `vectorstore/` - Pre-built vector database (no scraping needed)
+
+## Environment Variables
+
+Create a `.env` file or set in Streamlit Cloud secrets:
+```
+OPENAI_API_KEY=your_openai_api_key_here
+```
+
+## For Full Development
+
+If you want to modify the scraping, processing, or rebuild the vector database, see the main repository root for the complete development setup.
 
 ## 🚀 Deployment Instructions
 

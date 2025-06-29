@@ -1,10 +1,10 @@
 # app.py (version 3 - with strict prompting and source links)
 import streamlit as st
 import os
-from langchain_chroma import Chroma
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.vectorstores import Chroma
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI
-from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
 from dotenv import load_dotenv
@@ -12,7 +12,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # --- Configuration ---
-DB_PATH = "vectorstore"
+# Get the directory where this app.py file is located
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(SCRIPT_DIR, "vectorstore")
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 LLM_MODEL = "gpt-3.5-turbo" # Or "gpt-4" for higher quality
 
