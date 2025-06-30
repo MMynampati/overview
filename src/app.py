@@ -1,8 +1,8 @@
 # app.py (version 3 - with strict prompting and source links)
 import streamlit as st
 import os
-from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_chroma import Chroma
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import ConversationalRetrievalChain
